@@ -14,26 +14,15 @@ library(caret)
 library(sjPlot)
 library(readxl)
 library(glmnet)
+library(factoextra) #Viz PCA 
+#princomp : base R function for PCA
 
 #Data Frame 
-fb_biomech <- read_xlsx("/Users/abullock9/Documents/Wake/ML Fastball/Code and Data /FB_Velo_Data_clean_4.19.21.xlsx")
+fb_biomech <- read.csv("Insert your file path here.csv")
 
 #Sample Size 
 pmsampsize(type = "c",  rsquared = 0.89, parameters = 30, intercept = 36.1, sd = 3.41)
 #264
-
-#Averaging Observations 
-fb_biomech_avg <- fb_biomech_avg %>%
-  group_by(Subject_number) %>%
-  summarise_all(mean, na.rm = T)
-
-fb_biomech_avg_2 <- fb_biomech_avg #Creating new Data Frame 
-
-#Creating two Variables 
-fb_biomech_avg_2$trunkpelvis_timedif <- fb_biomech_avg_2$MaxThoraxVelTime_ms - fb_biomech_avg_2$MaxPelvisVelTime_ms
-
-fb_biomech_avg_2$stride_length_percent <- (fb_biomech_avg_2$STRIDE_LENGTH/fb_biomech_avg_2$HEIGHT)*100
-
 
 #Complete Case (missing data are very small)
 fb_biomech_avg_2$complete <- complete.cases(fb_biomech_avg_2)
@@ -45,6 +34,9 @@ fb_ml2 <- fb_ml2 %>%
   select(-complete)
 
 
+#Taking out Level for Primary Analyses
+fb_ml2 <- fb_ml2 %>% 
+          select(-Level)
 
 #################################
 #Regression Model
@@ -76,14 +68,14 @@ actual_v_predict_combined <- cbind(fb_ml2, statcv_predict)
 
 # C-slope
 mod_combined_2 <- glm(BALL_RELEASE_SPEED ~ statcv_predict,family="gaussian",x=TRUE,y=TRUE, data = actual_v_predict_combined)
-mod_combined_2 #1.00
-confint(mod_combined_2) #C Slope: 1.00 (95%CI: 0.85, 1.15)
+mod_combined_2
+confint(mod_combined_2) 
 
 
 #Calibration Plot 
 
 
-png("/Users/abullock9/Desktop/CalPlot_Stat_PitchVelo_4.18.21.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = actual_v_predict_combined, aes(x = statcv_predict, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -293,7 +285,7 @@ confint(mod_combined_2)
 
 
 #Calibration Plot 
-png("/Users/abullock9/Desktop/GBM_Calplot.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("INsert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = gbmactual_v_predict_combined, aes(x = pred_gbm, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -347,7 +339,7 @@ mod_combined_2 <- glm(BALL_RELEASE_SPEED ~ pred_svm,family="gaussian",x=TRUE,y=T
 mod_combined_2 #1.09
 confint(mod_combined_2) 
 
-png("/Users/abullock9/Desktop/Velo_SVM.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = svmactual_v_predict_combined, aes(x = pred_svm, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -489,7 +481,7 @@ mod_combined_2 #1.49
 confint(mod_combined_2) 
 
 
-png("/Users/abullock9/Desktop/Velo_RForest.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = forestactual_v_predict_combined, aes(x = pred_forest2, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -554,7 +546,7 @@ mod_combined_2 #1.00
 confint(mod_combined_2) 
 
 
-png("/Users/abullock9/Desktop/Sens_Elbow_Valgus_gbm.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = gbmactual_v_predict_combined, aes(x = pred_gbm, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -577,8 +569,7 @@ statcv_s <- train(BALL_RELEASE_SPEED ~  Back_Leg_GRF_mag_max + Hip_Shoulders_Sep
 summary(statcv_s$finalModel)
 confint(statcv_s$finalModel)
 statcv_s$results
-#parameter        RMSE  Rsquared        MAE  RMSESD RsquaredSD       MAESD
-#     none 2.783015 0.3459254 2.226238 0.4584002  0.1404119 0.3254252
+
 
 statcv_predict <- predict.train(statcv_s, newdata = fb_ml2, type = "raw")
 
@@ -596,7 +587,7 @@ mod_combined_2 #1.00
 confint(mod_combined_2) 
 
 
-png("/Users/abullock9/Desktop/CalPlot_Stat_noElbowShoulder_PitchVelo.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = actual_v_predict_combined, aes(x = statcv_predict, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -757,7 +748,7 @@ confint(mod_combined_2)
 #Calibration Plot 
 
 
-png("/Users/abullock9/Desktop/CalPlot_Stat_PitchVelo_Center_Scaled_10.19.21.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = actual_v_predict_combined, aes(x = statcv_predict, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -943,6 +934,7 @@ mod_combined_2
 confint(mod_combined_2) 
 
 
+
 ##########################################################################
 #Principal Component Data Driven Predictor Selection Sensitivity Analysis 
 ##########################################################################
@@ -971,7 +963,7 @@ pitch_predictors_kinematics <- pitch_biomech_notlong %>%
 
 str(pitch_predictors_kinematics)
 
-
+#1st PCA, no kinetics
 res.pca_kinematics <- princomp(pitch_predictors_kinematics)
 
 fviz_eig(res.pca_kinematics) #Vix Eigen Values 
@@ -1004,7 +996,40 @@ kinematics_pca_three_components <- res.pca_kinematics$scores[,1:3]
 pca_full_pitch <- cbind(pitch_velo_only, pitch_predictors_kinetics, kinematics_pca_three_components)
 
 
-#Adding PCA to Model 
+####2nd PCA, Both Kinematics and Kinetics 
+res.pca_both <- princomp(pitch_predictors)
+
+fviz_eig(res.pca_both) #Vix Eigen Values 
+
+fviz_pca_var(res.pca_both,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+) #Viz Variables within different pCA components 
+
+
+# Eigenvalues
+eig.val_both <- get_eigenvalue(res.pca_both)
+eig.val_both
+
+# Results for Variables
+res.var.both <- get_pca_var(res.pca_both)
+res.var.both$coord          # Coordinates
+res.var.both$contrib        # Contributions to the PCs
+res.var.both$cos2           # Quality of representation 
+
+##############Kinematics + Kineitcs (Both) 3 Components ###############################
+
+both_pca_three_components <- res.pca_both$scores[,1:3]
+
+
+#Combining PCA kinematics, kinetics, and Pitch Velo into one data frame 
+
+pca_both_pitch <- cbind(pitch_velo_only, both_pca_three_components)
+
+
+
+#Adding Kinematics PCA to Model 
 
 
 
@@ -1042,7 +1067,7 @@ confint(mod_combined_2)
 #Plot Itself 
 
 
-png("/Users/abullock9/Desktop/PCA_CalPlot_Stat_PitchVelo_11.6.21.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = actual_v_predict_combined, aes(x = statcv_predict, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
@@ -1160,7 +1185,177 @@ confint(mod_combined_2)
 
 #Plot Itself 
 
-png("/Users/abullock9/Desktop/PCA_GBM_Calplot_11.6.21.png", width = 3000, height = 3000, units = 'px', res = 500)
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
+ggplot(data = gbmactual_v_predict_combined, aes(x = pred_gbm, y = BALL_RELEASE_SPEED)) + 
+  geom_point() +
+  geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
+  geom_smooth(method = lm, se = T, color = "red", size = 1, alpha = 0.8) +
+  xlab("Predicted Pitch Velocity (m/s)") +
+  ylab("Observed Pitch Velocity (m/s)") +
+  theme_minimal() 
+dev.off()
+
+
+#########Kineamtic + Kinetics PCA Models 
+
+
+#Adding Kinematics PCA to Model 
+
+
+
+#Statistical Analyses 
+statcv <- train(BALL_RELEASE_SPEED ~ . ,
+                data = pca_both_pitch, method = "glm", family = "gaussian", 
+                trControl = trainControl("repeatedcv", number = 10)
+)
+coef(statcv$finalModel)
+confint(statcv$finalModel)
+statcv$results
+
+
+
+statcv_predict <- predict.train(statcv, newdata = pca_both_pitch, type = "raw")
+
+mean(statcv_predict) 
+sd(statcv_predict) 
+min(statcv_predict)
+max(statcv_predict) 
+
+
+actual_v_predict_combined <- cbind(pca_both_pitch, statcv_predict)
+
+# C-slope
+mod_combined_2 <- glm(BALL_RELEASE_SPEED ~ statcv_predict,family="gaussian",x=TRUE,y=TRUE, data = actual_v_predict_combined)
+mod_combined_2 #1.00
+confint(mod_combined_2) 
+
+
+#Calibration Plot 
+
+
+
+#Plot Itself 
+
+
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
+ggplot(data = actual_v_predict_combined, aes(x = statcv_predict, y = BALL_RELEASE_SPEED)) + 
+  geom_point() +
+  geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
+  geom_smooth(method = lm, se = T, color = "red", size = 1, alpha = 0.8) +
+  xlab("Predicted Pitch Velocity (m/s)") +
+  ylab("Observed Pitch Velocity (m/s)") +
+  xlim(25, 45) + 
+  ylim(25, 45) + 
+  theme_minimal()
+dev.off()
+
+
+#Ten Fold CV for Performance Metrics 
+
+nfolds=10
+
+results <- matrix(nrow = nfolds,ncol = 3)
+
+folds <- caret::createFolds(pca_both_pitch$BALL_RELEASE_SPEED, k=10)
+
+
+
+for(i in 1:nfolds){
+  
+  cv_samp <- pca_full_pitch[-folds[[i]],]
+  
+  cv_test <- pca_full_pitch[folds[[i]],]
+  
+  
+  model <- glm(BALL_RELEASE_SPEED ~  .,
+               data = cv_samp, family = "gaussian")
+  
+  pr_cv <- predict(model,type="response", newdata = cv_samp)
+  
+  pr_cv2 <- cbind(cv_samp, pr_cv)
+  
+  test_predict <- predict(model,type="response", newdata = cv_test)
+  
+  test_predict2 <- cbind(cv_test, test_predict)
+  
+  app_rsquare_model <-   caret::R2(pr_cv2$pr_cv, pr_cv2$BALL_RELEASE_SPEED)
+  
+  results[i,1] <- app_rsquare_model
+  
+  app_cslope_model <- glm(BALL_RELEASE_SPEED ~ pr_cv, family= "gaussian", data= pr_cv2)
+  
+  results[i,2] <- summary(app_cslope_model)$coefficients[2,1]
+  
+  
+  
+  RMSE <- caret::RMSE(pr_cv2$pr_cv, pr_cv2$BALL_RELEASE_SPEED)
+  
+  results[i,3] <- RMSE
+  
+}
+
+results2 <- as.data.frame(results)
+
+colnames(results2) <- c("r-square","c_slope", "RMSE")
+
+mean(results2$`r-square`)
+mean(results2$c_slope) 
+mean(results2$RMSE) 
+
+
+
+##############################################
+#Gradient Boosting Machine 
+#############################################
+
+gbm.final <- gbm(
+  formula = BALL_RELEASE_SPEED ~ .,
+  distribution = "gaussian",
+  data = pca_full_pitch,
+  n.trees = 2500,
+  interaction.depth = 3,
+  shrinkage = 0.30,
+  n.minobsinnode = 5,
+  bag.fraction = 0.8,
+  train.fraction = 1,
+  cv.folds = 10,
+  n.cores = NULL, # will use all cores by default
+  verbose = FALSE
+)
+
+summary(gbm.final) 
+
+
+
+#Visualizing Influence of Difference VARS 
+summary(
+  gbm.final, 
+  cBars = 10,
+  method = relative.influence, # also can use permutation.test.gbm
+  las = 2
+)
+
+pred_gbm <- predict(gbm.final, n.trees = gbm.final$n.trees, pca_full_pitch)
+
+summary(pred_gbm)
+
+sd(pred_gbm) 
+
+caret::RMSE(pred_gbm, pca_full_pitch$BALL_RELEASE_SPEED)
+#3.338892e-08
+caret::R2(pred_gbm, pca_full_pitch$BALL_RELEASE_SPEED)
+
+gbmactual_v_predict_combined <- cbind(pca_full_pitch, pred_gbm)
+
+# C-slope
+mod_combined_2 <- glm(BALL_RELEASE_SPEED ~ pred_gbm,family="gaussian",x=TRUE,y=TRUE, data = gbmactual_v_predict_combined)
+mod_combined_2 
+confint(mod_combined_2) 
+
+
+#Plot Itself 
+
+png("Insert Your File Path Here.png", width = 3000, height = 3000, units = 'px', res = 500)
 ggplot(data = gbmactual_v_predict_combined, aes(x = pred_gbm, y = BALL_RELEASE_SPEED)) + 
   geom_point() +
   geom_abline(slope = 1, color = "blue", size = 2, alpha = 0.6) + # 45 degree line indicating perfect calibration
